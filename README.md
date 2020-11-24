@@ -8,19 +8,18 @@ This plugin is a modification of a plugin created by dnpwwo https://github.com/d
 On the Raspberry PI:
 - enable remote GPIO in settings (Raspberry Pi configuration tool in menu)
 - set selected GPIOs as OUTPUT
-  e.g. (insert linie in some raspberry startup script)
-    gpio mode 19 out  
+  e.g. (insert in some raspberry startup script):   gpio mode 19 out  
   
-- install pigpiod daemon:
-    sudo apt update
-    sudo apt install pigpio
-    sudo systemctl enable pigpiod
-    sudo systemctl start pigpiod
+- install and run pigpiod daemon:
+   - sudo apt update
+   - sudo apt install pigpio
+   - sudo systemctl enable pigpiod
+   - sudo systemctl start pigpiod
  
  On the computer with Domoticz:
  - install Python libraries
-    sudo apt-get update
-    sudo apt-get install pigpio python-pigpio python3-pigpio
+   - sudo apt-get update
+   - sudo apt-get install pigpio python-pigpio python3-pigpio
 
 - create folder RemoteGPIO in Domoticz/plugins
 - insert file plugin.py into created folder
