@@ -38,4 +38,4 @@ Configuration:
 - NO - normal open - switch in domoticz device to 1 -> set GPIO to 1
 - NC - normal closed - switch domoticz device to 1 -> set GPIO to 0
  
- NC is used by me for relay modulue switched on with logical zero.
+ NC is used by me for relay module switched on with logical zero.
