@@ -60,6 +60,7 @@ class BasePlugin:
             Domoticz.Debugging(int(Parameters["Mode4"]))
             DumpConfigToLog()
 
+        global p1
         p1=pigpio.pi(Parameters["Mode1"])
         Domoticz.Heartbeat(int(Parameters["Mode3"]))
     
@@ -87,6 +88,7 @@ class BasePlugin:
         p1.stop()
 
     def onCommand(self,Unit, Command, Level, Hue):
+        global p1
         p1=pigpio.pi(Parameters["Mode1"])
         Domoticz.Log("onCommand for Unit " + str(Unit) + ": Parameter '" + str(Command) + "', Level: " + str(Level))
         outputPins = Parameters["Mode2"].split(',')
@@ -114,10 +116,14 @@ class BasePlugin:
 
     def onStop(self):
         Domoticz.Debug("onStop called")
+        global p1
+        if p1.connected:
+            p1.stop()
 
     def onHeartbeat(self):
         if (len(Parameters["Mode2"]) > 0):
             try:
+                global p1
                 p1=pigpio.pi(Parameters["Mode1"])
                 outputPins = Parameters["Mode2"].split(',')
                 for pin in outputPins:
@@ -146,6 +152,8 @@ class BasePlugin:
 
 global _plugin
 _plugin = BasePlugin()
+
+global p1
  
 def onStart():
     global _plugin
