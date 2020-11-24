@@ -1,6 +1,6 @@
 # Domoticz-Remote-GPIO-Plugin
 #
-# Author: Rafalwal
+# Author: Rafalwal (oryginal plugin created by dnpwwo)
 #
 #
 """
@@ -49,92 +49,121 @@
 """
 import Domoticz
 import pigpio
-def onStart():
-    if Parameters["Mode4"] != "0":
-        Domoticz.Log("Parameter is: '"+Parameters["Mode4"]+"'")
-        Domoticz.Debugging(int(Parameters["Mode4"]))
-        DumpConfigToLog()
 
-    p1=pigpio.pi(Parameters["Mode1"])
-    Domoticz.Heartbeat(int(Parameters["Mode3"]))
+class BasePlugin:
+    def __init__(self):
+        return
+
+    def onStart(self):
+        if Parameters["Mode4"] != "0":
+            Domoticz.Log("Parameter is: '"+Parameters["Mode4"]+"'")
+            Domoticz.Debugging(int(Parameters["Mode4"]))
+            DumpConfigToLog()
+
+        p1=pigpio.pi(Parameters["Mode1"])
+        Domoticz.Heartbeat(int(Parameters["Mode3"]))
     
-    # Process Output Pins
-    if (len(Parameters["Mode2"]) > 0):
-        try:
-            outputPins = Parameters["Mode2"].split(',')
-            for pin in outputPins:
-                items = pin.split(':')
-                pinNo = int(items[0])
-                if not (pinNo in Devices):
-                    Domoticz.Log("Creating Output device #"+str(pin))
-                    Domoticz.Device(Name="Output "+items[0], Unit=pinNo, TypeName="Switch").Create() 
-                rpin=p1.read(pinNo) 
-                if (items[1]=="NC"):
-                    if (rpin==0):
-                        rpin=1
-                    else:
-                        rpin=0
-                UpdateDevice(pinNo, rpin, "", 0)
-        except Exception as inst:
-            Domoticz.Error("Exception in onStart, processing Output Pins")
-            Domoticz.Error("Exception detail: '"+str(inst)+"'"+Parameters["Mode2"])
-            raise
-    p1.stop()
+        # Process Output Pins
+        if (len(Parameters["Mode2"]) > 0):
+            try:
+                outputPins = Parameters["Mode2"].split(',')
+                for pin in outputPins:
+                    items = pin.split(':')
+                    pinNo = int(items[0])
+                    if not (pinNo in Devices):
+                        Domoticz.Log("Creating Output device #"+str(pin))
+                        Domoticz.Device(Name="Output "+items[0], Unit=pinNo, TypeName="Switch").Create() 
+                    rpin=p1.read(pinNo) 
+                    if (items[1]=="NC"):
+                        if (rpin==0):
+                            rpin=1
+                        else:
+                            rpin=0
+                    self.UpdateDevice(pinNo, rpin, "", 0)
+            except Exception as inst:
+                Domoticz.Error("Exception in onStart, processing Output Pins")
+                Domoticz.Error("Exception detail: '"+str(inst)+"'"+Parameters["Mode2"])
+                raise
+        p1.stop()
+
+    def onCommand(self,Unit, Command, Level, Hue):
+        p1=pigpio.pi(Parameters["Mode1"])
+        Domoticz.Log("onCommand for Unit " + str(Unit) + ": Parameter '" + str(Command) + "', Level: " + str(Level))
+        outputPins = Parameters["Mode2"].split(',')
+        for pin in outputPins:
+            items = pin.split(':')
+            pinNotmp = int(items[0])
+            pinNCNOtmp = items[1]
+            if (pinNotmp==Unit):
+                pinNCNO=pinNCNOtmp
+
+        if (Command == "On"):    
+            if (pinNCNO=="NC"):
+                rpin=0
+            else:
+                rpin=1
+        else:
+            if (pinNCNO=="NC"):
+                rpin=1
+            else:
+                rpin=0
+
+        p1.write(Unit,rpin)
+        p1.stop
+        self.UpdateDevice(Unit, rpin, Command, 0)
+
+    def onStop(self):
+        Domoticz.Debug("onStop called")
+
+    def onHeartbeat(self):
+        if (len(Parameters["Mode2"]) > 0):
+            try:
+                p1=pigpio.pi(Parameters["Mode1"])
+                outputPins = Parameters["Mode2"].split(',')
+                for pin in outputPins:
+                    items = pin.split(':')
+                    pinNo = int(items[0])
+                    rpin=p1.read(pinNo) 
+                    if (items[1]=="NC"):
+                        if (rpin==0):
+                            rpin=1
+                        else:
+                            rpin=0
+                    self.UpdateDevice(pinNo, rpin, "", 0)
+                p1.stop()
+            except Exception as inst:
+                Domoticz.Error("Exception in onHeartbeat, processing Output Pins")
+                Domoticz.Error("Exception detail: '"+str(inst)+"'"+Parameters["Mode1"])
+                raise
+
+    def UpdateDevice(self,Unit, nValue, sValue, TimedOut):
+        # Make sure that the Domoticz device still exists (they can be deleted) before updating it 
+        if (Unit in Devices):
+            if (Devices[Unit].nValue != nValue) or (Devices[Unit].sValue != sValue) or (Devices[Unit].TimedOut != TimedOut):
+                Devices[Unit].Update(nValue=nValue, sValue=str(sValue), TimedOut=TimedOut)
+                Domoticz.Log("Update "+str(nValue)+":'"+str(sValue)+"' ("+Devices[Unit].Name+")")
+        return
+
+global _plugin
+_plugin = BasePlugin()
+ 
+def onStart():
+    global _plugin
+    _plugin.onStart()
+ 
+def onStop():
+    global _plugin
+    _plugin.onStop()
 
 def onCommand(Unit, Command, Level, Hue):
-    #gotowe
-    p1=pigpio.pi(Parameters["Mode1"])
-    Domoticz.Log("onCommand for Unit " + str(Unit) + ": Parameter '" + str(Command) + "', Level: " + str(Level))
-    outputPins = Parameters["Mode2"].split(',')
-    for pin in outputPins:
-        items = pin.split(':')
-        pinNotmp = int(items[0])
-        pinNCNOtmp = items[1]
-        if (pinNotmp==Unit):
-            pinNCNO=pinNCNOtmp
-
-    if (Command == "On"):    
-        if (pinNCNO=="NC"):
-            rpin=0
-        else:
-            rpin=1
-    else:
-        if (pinNCNO=="NC"):
-            rpin=1
-        else:
-            rpin=0
-
-    p1.write(Unit,rpin)
-    p1.stop
-    UpdateDevice(Unit, rpin, Command, 0)
-
-#def onStop():
-    #gotowe	
-#    Domoticz.Debug("onStop")
-
+    global _plugin
+    _plugin.onCommand(Unit, Command, Level, Hue)
+ 
 def onHeartbeat():
-   if (len(Parameters["Mode2"]) > 0):
-        try:
-            p1=pigpio.pi(Parameters["Mode1"])
-            outputPins = Parameters["Mode2"].split(',')
-            for pin in outputPins:
-                items = pin.split(':')
-                pinNo = int(items[0])
-                rpin=p1.read(pinNo) 
-                if (items[1]=="NC"):
-                    if (rpin==0):
-                        rpin=1
-                    else:
-                        rpin=0
-                UpdateDevice(pinNo, rpin, "", 0)
-            p1.stop()
-        except Exception as inst:
-            Domoticz.Error("Exception in onHeartbeat, processing Output Pins")
-            Domoticz.Error("Exception detail: '"+str(inst)+"'"+Parameters["Mode1"])
-            raise
+    global _plugin
+    _plugin.onHeartbeat()
 
-# Generic helper functions
-#gotowe
+ # Generic helper functions
 def DumpConfigToLog():
     for x in Parameters:
         if Parameters[x] != "":
@@ -147,13 +176,4 @@ def DumpConfigToLog():
         Domoticz.Log("Device nValue:    " + str(Devices[x].nValue))
         Domoticz.Log("Device sValue:   '" + Devices[x].sValue + "'")
         Domoticz.Log("Device LastLevel: " + str(Devices[x].LastLevel))
-    return
-    
-def UpdateDevice(Unit, nValue, sValue, TimedOut):
-    #gotowe
-    # Make sure that the Domoticz device still exists (they can be deleted) before updating it 
-    if (Unit in Devices):
-        if (Devices[Unit].nValue != nValue) or (Devices[Unit].sValue != sValue) or (Devices[Unit].TimedOut != TimedOut):
-            Devices[Unit].Update(nValue=nValue, sValue=str(sValue), TimedOut=TimedOut)
-            Domoticz.Log("Update "+str(nValue)+":'"+str(sValue)+"' ("+Devices[Unit].Name+")")
     return
