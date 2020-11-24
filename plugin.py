@@ -75,11 +75,9 @@ class BasePlugin:
                         Domoticz.Log("Creating Output device #"+str(pin))
                         Domoticz.Device(Name="Output "+items[0], Unit=pinNo, TypeName="Switch").Create() 
                     rpin=p1.read(pinNo) 
-                    if (items[1]=="NC"):
-                        if (rpin==0):
-                            rpin=1
-                        else:
-                            rpin=0
+                    if (items[1]=='NC'):    
+                        rpin=1-rpin
+
                     self.UpdateDevice(pinNo, rpin, "", 0)
             except Exception as inst:
                 Domoticz.Error("Exception in onStart, processing Output Pins")
@@ -99,16 +97,10 @@ class BasePlugin:
             if (pinNotmp==Unit):
                 pinNCNO=pinNCNOtmp
 
-        if (Command == "On"):    
-            if (pinNCNO=="NC"):
-                rpin=0
-            else:
-                rpin=1
+        if (Command == "On" and pinNCNO=="NC") or (Command=="Off" and pinNCNO=="NO"):    
+            rpin=0
         else:
-            if (pinNCNO=="NC"):
-                rpin=1
-            else:
-                rpin=0
+            rpin=1
 
         p1.write(Unit,rpin)
         p1.stop
@@ -130,11 +122,8 @@ class BasePlugin:
                     items = pin.split(':')
                     pinNo = int(items[0])
                     rpin=p1.read(pinNo) 
-                    if (items[1]=="NC"):
-                        if (rpin==0):
-                            rpin=1
-                        else:
-                            rpin=0
+                    if (items[1]=='NC'):    
+                        rpin=1-rpin
                     self.UpdateDevice(pinNo, rpin, "", 0)
                 p1.stop()
             except Exception as inst:
