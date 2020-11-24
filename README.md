@@ -1,5 +1,5 @@
 # domoticz-remote-gpio-plugin 
-Plugin for read and set raspberry GPIOs from remote computer with Domoticz Domoticz
+Plugin for read and set raspberry GPIOs from Domoticz on remote machine
 
 Tested on Raspberry PI3 and PC with Domoticz on Debian system
 
