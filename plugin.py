@@ -103,7 +103,7 @@ class BasePlugin:
             rpin=1
 
         p1.write(Unit,rpin)
-        p1.stop
+        p1.stop()
         self.UpdateDevice(Unit, rpin, Command, 0)
 
     def onStop(self):
